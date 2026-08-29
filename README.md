@@ -48,7 +48,7 @@ devtool-lead-scraper/
 ├── package.json
 ├── tsconfig.json
 └── .env.example
-
+```
 
 🚀 Quick Start & Local Setup
 1. Prerequisites
