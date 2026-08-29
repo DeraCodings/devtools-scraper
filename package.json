@@ -1,0 +1,30 @@
+{
+  "name": "devtool-lead-scraper",
+  "version": "1.0.0",
+  "description": "CLI tool to scrape and filter high-intent prospective DevTool leads",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@mendable/firecrawl-js": "^1.8.0",
+    "commander": "^12.1.0",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^16.4.5",
+    "node-cron": "^4.6.0",
+    "serpapi": "^2.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

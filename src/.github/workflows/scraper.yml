@@ -1,0 +1,45 @@
+name: DevTool Lead Scraper Midnight Run
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every day
+    - cron: "0 0 * * *"
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Lead Scraper
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          FIRECRAWL_KEY: ${{ secrets.FIRECRAWL_KEY }}
+          OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          npx tsx src/index.ts --preset ATS_HIRING --limit 30
+          npx tsx src/index.ts --preset AI_DEVTOOLS --limit 30
+          npx tsx src/index.ts --preset AUTH_COMPETITORS --limit 30
+          npx tsx src/index.ts --preset CMS_COMPETITORS --limit 30
+          npx tsx src/index.ts --preset BAAS_COMPETITORS --limit 30
+          npx tsx src/index.ts --preset YC_STARTUPS --limit 30
+          npx tsx src/index.ts --preset G2_CAPTERRA --limit 30
+
+      - name: Commit & Push CSV Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(data): update lead exports and deduplication history [skip ci]"
+          file_pattern: "*.csv data/*.csv"
