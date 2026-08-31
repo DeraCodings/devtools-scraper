@@ -1,47 +1,59 @@
+import { Client } from "eve/client";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 
-/**
- * Dispatches a list of scraped company lead URLs to the deployed Eve Agent webhook.
- */
 export async function dispatchLeadsToEveAgent(urls: string[]) {
-  const agentWebhookUrl = process.env.EVE_AGENT_WEBHOOK_URL;
-  const routeToken = process.env.EVE_ROUTE_TOKEN;
+  const host = process.env.EVE_URL; // e.g., https://devtool-research-agent.vercel.app
+  const bearerToken = process.env.EVE_ROUTE_TOKEN;
 
-  if (!agentWebhookUrl || !routeToken) {
+  if (!host || !bearerToken) {
     console.warn(
-      "Skipping dispatch: EVE_AGENT_WEBHOOK_URL or EVE_ROUTE_TOKEN missing.",
+      "⚠️ Skipping dispatch: EVE_URL or EVE_ROUTE_TOKEN environment variables missing.",
     );
     return;
   }
 
   if (urls.length === 0) {
-    console.log("No leads to dispatch.");
+    console.log("ℹ️ No leads to dispatch.");
     return;
   }
 
   try {
-    const response = await fetch(agentWebhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${routeToken}`,
+    const client = new Client({
+      host,
+      auth: {
+        bearer: bearerToken,
       },
-      body: JSON.stringify({ urls }),
+      redirect: "error",
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    console.log(
+      `📡 Creating Eve agent session for ${urls.length} target leads...`,
+    );
+
+    const { response } = await client.sessions.create({
+      message: [
+        "Conduct a complete prospect research analysis for the following target URLs.",
+        "Discover key surfaces, inspect representative pages, score the content landscape depth, and identify cold-outreach angles.",
+        "Do not ask follow-up questions; complete the research with the available information.",
+        "",
+        JSON.stringify({ urls }),
+      ].join("\n"),
+    });
+
+    const result = await response.result();
+
+    if (result.status !== "completed") {
+      throw new Error(
+        `Eve session failed (${result.status}): ${result.message ?? "Unknown error"}`,
+      );
     }
 
-    const data = await response.json();
     console.log(
-      `Successfully dispatched ${urls.length} leads to Eve agent:`,
-      data,
+      `✅ Successfully completed Eve research for ${urls.length} leads.`,
     );
   } catch (error: any) {
-    console.error("Failed to dispatch leads to Eve agent:", error?.message);
+    console.error("❌ Failed to dispatch leads to Eve agent:", error?.message);
   }
 }
