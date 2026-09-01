@@ -33,13 +33,13 @@ jobs:
           EVE_URL: ${{ secrets.EVE_URL }}
           EVE_ROUTE_TOKEN: ${{ secrets.EVE_ROUTE_TOKEN }}
         run: |
-          npx tsx src/index.ts --preset ATS_HIRING --limit 30
-          npx tsx src/index.ts --preset AI_DEVTOOLS --limit 30
-          npx tsx src/index.ts --preset AUTH_COMPETITORS --limit 30
-          npx tsx src/index.ts --preset CMS_COMPETITORS --limit 30
-          npx tsx src/index.ts --preset BAAS_COMPETITORS --limit 30
-          npx tsx src/index.ts --preset YC_STARTUPS --limit 30
-          npx tsx src/index.ts --preset G2_CAPTERRA --limit 30
+          npx tsx src/index.ts --preset ATS_HIRING --limit 5
+          npx tsx src/index.ts --preset AI_DEVTOOLS --limit 5
+          npx tsx src/index.ts --preset AUTH_COMPETITORS --limit 5
+          npx tsx src/index.ts --preset CMS_COMPETITORS --limit 5
+          npx tsx src/index.ts --preset BAAS_COMPETITORS --limit 5
+          npx tsx src/index.ts --preset YC_STARTUPS --limit 5
+          npx tsx src/index.ts --preset G2_CAPTERRA --limit 5
 
       - name: Commit & Push CSV Changes
         uses: stefanzweifel/git-auto-commit-action@v5
