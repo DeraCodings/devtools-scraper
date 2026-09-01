@@ -12,7 +12,7 @@ import {
   getHistoricalDomains,
 } from "./storage/exporter.js";
 import { Lead, ScrapedPage, SearchResult } from "./types/index.js";
-import { sendTelegramNotification } from "./services/notifier.js";
+// import { sendTelegramNotification } from "./services/notifier.js";
 import { dispatchLeadsToEveAgent } from "./services/eveDispatcher.js"; // Import the helper function
 
 const program = new Command();
@@ -121,18 +121,26 @@ const runScraper = async (options: any) => {
     await exportToCSV(qualifiedLeads);
   }
 
-  await sendTelegramNotification(qualifiedLeads);
+  // await sendTelegramNotification(qualifiedLeads);
 
   // Step 5: Dispatch qualified lead URLs to Eve Agent Webhook
-  const leadUrls = qualifiedLeads
-    .map((lead) => lead.sourceUrl || (lead as any).website)
-    .filter(Boolean);
+  // const leadUrls = qualifiedLeads
+  //   .map((lead) => lead.sourceUrl || (lead as any).website)
+  //   .filter(Boolean);
 
-  if (leadUrls.length > 0) {
+  // if (leadUrls.length > 0) {
+  //   console.log(
+  //     `📡 Dispatching ${leadUrls.length} qualified leads to Eve Agent...`,
+  //   );
+  //   await dispatchLeadsToEveAgent(leadUrls);
+  // }
+
+  // Step 5: Dispatch qualified leads to Eve Agent (handles research + unified Telegram notification)
+  if (qualifiedLeads.length > 0) {
     console.log(
-      `📡 Dispatching ${leadUrls.length} qualified leads to Eve Agent...`,
+      `📡 Dispatching ${qualifiedLeads.length} qualified lead(s) to Eve Agent for research...`,
     );
-    await dispatchLeadsToEveAgent(leadUrls);
+    await dispatchLeadsToEveAgent(qualifiedLeads);
   }
 
   console.log(
