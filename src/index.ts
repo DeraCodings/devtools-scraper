@@ -1,9 +1,11 @@
 import { Command } from "commander";
+import { isEnterpriseBlocked } from "./config/enterprise-blocklist.js";
 import { analyzeBatch } from "./services/analyser.js";
+import { dispatchLeadsToEveAgent } from "./services/eveDispatcher.js";
 import { scrapeBatch, scrapePage } from "./services/scraper.js";
 import {
   discoverTargets,
-  extractDomain,
+  parseUrlTarget,
   TARGET_SEARCH_PRESETS,
 } from "./services/search.js";
 import {
@@ -11,28 +13,26 @@ import {
   exportToJSON,
   getHistoricalDomains,
 } from "./storage/exporter.js";
+import { isLeadOrCompanyKnown } from "./storage/registry.js";
 import { Lead, ScrapedPage, SearchResult } from "./types/index.js";
-// import { sendTelegramNotification } from "./services/notifier.js";
-import { dispatchLeadsToEveAgent } from "./services/eveDispatcher.js"; // Import the helper function
 
 const program = new Command();
 
 program
   .name("devtool-scraper")
   .description(
-    "Lightweight CLI tool to scrape and filter high-intent DevTool prospective leads",
+    "Intelligent CLI lead discovery pipeline for technical content writers and DevRel consultants",
   )
-  .version("1.0.0");
+  .version("2.0.0");
 
-// Make the action directly attached or handle `scrape` gracefully
 const runScraper = async (options: any) => {
-  console.log("\n🚀 Starting DevTool Lead Scraper CLI...\n");
+  console.log("\n🚀 Starting DevTool Lead Scraper CLI v2.0...\n");
 
   const limit = parseInt(options.limit || "5", 10);
   const searchTargets: SearchResult[] = [];
   const directPages: ScrapedPage[] = [];
 
-  // Load existing domains from past CSV runs
+  // Load existing domains & slugs from past exports & central registry
   const knownDomains = await getHistoricalDomains();
 
   // Step 1: Identify targets
@@ -43,7 +43,10 @@ const runScraper = async (options: any) => {
 
     if (!queries) {
       console.error(
-        `❌ Invalid preset "${options.preset}". Valid options: ATS_HIRING, YC_STARTUPS, G2_CAPTERRA`,
+        `❌ Invalid preset "${options.preset}". Valid options:\n` +
+          Object.keys(TARGET_SEARCH_PRESETS)
+            .map((k) => `   • ${k}`)
+            .join("\n"),
       );
       process.exit(1);
     }
@@ -58,14 +61,33 @@ const runScraper = async (options: any) => {
   } else if (options.urls && options.urls.length > 0) {
     console.log(`🌐 Processing ${options.urls.length} direct target URLs...`);
     for (const url of options.urls) {
-      const domain = extractDomain(url);
-      if (knownDomains.has(domain.toLowerCase())) {
+      const { domain, companySlug } = parseUrlTarget(url);
+
+      if (isEnterpriseBlocked(companySlug) || isEnterpriseBlocked(domain)) {
         console.log(
-          `⏩ Skipping direct URL ${url}: Domain "${domain}" already in past CSV exports.`,
+          `🚫 Skipping direct URL ${url}: Enterprise blocklist matched (${companySlug || domain}).`,
         );
         continue;
       }
-      const scraped = await scrapePage(url, domain);
+
+      const knownCheck = await isLeadOrCompanyKnown({
+        companySlug,
+        domain,
+        jobUrl: url,
+      });
+
+      if (
+        knownDomains.has(companySlug.toLowerCase()) ||
+        knownDomains.has(domain.toLowerCase()) ||
+        knownCheck.isKnown
+      ) {
+        console.log(
+          `⏩ Skipping direct URL ${url}: "${companySlug || domain}" already in history.`,
+        );
+        continue;
+      }
+
+      const scraped = await scrapePage(url, domain, companySlug);
       if (scraped) directPages.push(scraped);
     }
   } else {
@@ -75,19 +97,30 @@ const runScraper = async (options: any) => {
     process.exit(1);
   }
 
-  // Filter out targets already in past CSV exports
-  const newTargets = searchTargets.filter((target) => {
-    const isKnown = knownDomains.has(target.domain.toLowerCase());
-    if (isKnown) {
+  // Filter out targets already known in registry or past exports
+  const newTargets: SearchResult[] = [];
+  for (const target of searchTargets) {
+    const isKnownHistorical =
+      knownDomains.has(target.companySlug.toLowerCase()) ||
+      knownDomains.has(target.domain.toLowerCase());
+
+    const knownCheck = await isLeadOrCompanyKnown({
+      companySlug: target.companySlug,
+      jobUrl: target.link,
+      domain: target.domain,
+    });
+
+    if (isKnownHistorical || knownCheck.isKnown) {
       console.log(
-        `⏩ Skipping target "${target.domain}": Previously exported in past CSV.`,
+        `⏩ Skipping target "${target.companySlug || target.domain}": ${knownCheck.reason || "Present in past CSV exports."}`,
       );
+    } else {
+      newTargets.push(target);
     }
-    return !isKnown;
-  });
+  }
 
   console.log(
-    `🎯 ${newTargets.length} new targets remaining after historical deduplication.`,
+    `🎯 ${newTargets.length} new qualified targets remaining after historical deduplication.`,
   );
 
   // Step 2: Scrape targets
@@ -112,7 +145,7 @@ const runScraper = async (options: any) => {
     return;
   }
 
-  // Step 4: Export qualified leads to local files
+  // Step 4: Export qualified leads to local files (with automatic append/merge)
   const format = (options.format || "both").toLowerCase();
   if (format === "json" || format === "both") {
     await exportToJSON(qualifiedLeads);
@@ -121,24 +154,10 @@ const runScraper = async (options: any) => {
     await exportToCSV(qualifiedLeads);
   }
 
-  // await sendTelegramNotification(qualifiedLeads);
-
-  // Step 5: Dispatch qualified lead URLs to Eve Agent Webhook
-  // const leadUrls = qualifiedLeads
-  //   .map((lead) => lead.sourceUrl || (lead as any).website)
-  //   .filter(Boolean);
-
-  // if (leadUrls.length > 0) {
-  //   console.log(
-  //     `📡 Dispatching ${leadUrls.length} qualified leads to Eve Agent...`,
-  //   );
-  //   await dispatchLeadsToEveAgent(leadUrls);
-  // }
-
   // Step 5: Dispatch qualified leads to Eve Agent (handles research + unified Telegram notification)
   if (qualifiedLeads.length > 0) {
     console.log(
-      `📡 Dispatching ${qualifiedLeads.length} qualified lead(s) to Eve Agent for research...`,
+      `📡 Dispatching ${qualifiedLeads.length} qualified lead(s) to Eve Agent for research & alerting...`,
     );
     await dispatchLeadsToEveAgent(qualifiedLeads);
   }
@@ -153,7 +172,7 @@ program
   .description("Scrape and qualify high-intent DevTool prospects")
   .option(
     "-p, --preset <preset>",
-    "Search preset: ATS_HIRING, BAAS_COMPETITORS, AUTH_COMPETITORS, CMS_COMPETITORS, AI_DEVTOOLS, YC_STARTUPS, G2_CAPTERRA",
+    "Search preset: ATS_HIRING, DEVREL_HIRING, WRITERS_PROGRAMS, STARTUP_BOARDS, FREELANCE_REMOTE_BOARDS, SOCIAL_HIRING, AI_DEVTOOLS, BAAS_COMPETITORS, AUTH_COMPETITORS, CMS_COMPETITORS",
   )
   .option("-q, --query <query>", "Custom search query string")
   .option(
@@ -165,3 +184,4 @@ program
   .action(runScraper);
 
 program.parse(process.argv);
+

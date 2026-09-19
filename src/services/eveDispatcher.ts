@@ -5,10 +5,26 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 function escapeHtml(text: string): string {
+  if (!text) return "";
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function getLeadTypeBadge(leadType?: string): string {
+  switch (leadType) {
+    case "WRITERS_PROGRAM":
+      return "✍️ <b>[PAID WRITERS PROGRAM]</b>";
+    case "DEVREL_HIRING":
+      return "🥑 <b>[DEVREL HIRING → TECH WRITER NEED]</b>";
+    case "JOB_POSTING":
+      return "💼 <b>[ACTIVE TECHNICAL WRITER ROLE]</b>";
+    case "FOUNDER_POST":
+      return "📢 <b>[FOUNDER / SOCIAL HIRING CALL]</b>";
+    default:
+      return "🔥 <b>[HIGH-INTENT DEVTOOL LEAD]</b>";
+  }
 }
 
 async function sendUnifiedTelegramNotification(
@@ -39,22 +55,34 @@ async function sendUnifiedTelegramNotification(
           .join("\n\n")
       : "<i>No outreach angles extracted.</i>";
 
+  const devrelCallout =
+    lead.leadType === "DEVREL_HIRING"
+      ? `\n🥑 <b>DevRel Pitch Angle:</b>\n<i>Company is scaling Developer Relations! Pitch contract technical tutorials, quickstarts, and integration guides while this full-time role is being onboarded.</i>\n`
+      : "";
+
+  const customAngleCallout = lead.outreachAngle
+    ? `\n🎯 <b>Strategic Angle:</b>\n<i>${escapeHtml(lead.outreachAngle)}</i>\n`
+    : "";
+
+  const directJobUrl = lead.jobPostingUrl || lead.sourceUrl;
+  const companySiteUrl = lead.companyWebsite || `https://${lead.domain}`;
+
   const message = `
-🔥 <b>New Qualified Lead + Research Scorecard!</b>
+${getLeadTypeBadge(lead.leadType)}
 
 🏢 <b>Company:</b> ${escapeHtml(lead.companyName)}
 🎯 <b>Intent Score:</b> ${lead.intentScore}/100
 📊 <b>Content Depth:</b> ${escapeHtml(String(researchData.content_depth_score || "Sweet Spot"))}
 💼 <b>Active Roles:</b> ${escapeHtml(rolesText)}
-🌐 <b>Domain:</b> ${escapeHtml(lead.domain)}
+🌐 <b>Website:</b> <a href="${companySiteUrl}">${escapeHtml(lead.companySlug || lead.domain)}</a>
 
 🧠 <b>AI Qualification Summary:</b>
 <i>${escapeHtml(lead.summaryReasoning)}</i>
-
+${devrelCallout}${customAngleCallout}
 💡 <b>Eve Cold-Outreach Angles:</b>
 ${anglesFormatted}
 
-🔗 <a href="${lead.sourceUrl}">View Source / Job Posting</a>
+🔗 <a href="${directJobUrl}"><b>👉 View Direct Job Posting / Application</b></a>
   `.trim();
 
   try {
@@ -101,7 +129,20 @@ export async function dispatchLeadsToEveAgent(leads: Lead[]) {
   });
 
   for (const lead of leads) {
-    const targetUrl = lead.sourceUrl || `https://${lead.domain}`;
+    // Resolve the company's real home website so Eve analyzes docs and tutorials, not an ATS form
+    const isAtsHost = [
+      "greenhouse.io",
+      "lever.co",
+      "ashbyhq.com",
+      "workable.com",
+    ].some((ats) => lead.domain.includes(ats));
+
+    const targetUrl =
+      lead.companyWebsite && !isAtsHost
+        ? lead.companyWebsite
+        : isAtsHost
+          ? `https://${lead.companySlug}.com`
+          : `https://${lead.domain}`;
 
     try {
       console.log(
@@ -110,8 +151,8 @@ export async function dispatchLeadsToEveAgent(leads: Lead[]) {
 
       const { response } = await client.sessions.create({
         message: [
-          `Conduct a complete prospect research analysis for: ${targetUrl}.`,
-          "Discover key surfaces, inspect representative pages, score the content landscape depth, and identify cold-outreach angles.",
+          `Conduct a complete prospect research analysis for DevTool company: ${lead.companyName} (${targetUrl}).`,
+          "Discover key surfaces, inspect developer documentation and blog tutorials, score the content landscape depth, and identify high-converting cold-outreach angles for a technical content writer.",
           "Do not ask follow-up questions; complete the research with the available information.",
           "",
           JSON.stringify({ urls: [targetUrl] }),
@@ -151,3 +192,4 @@ export async function dispatchLeadsToEveAgent(leads: Lead[]) {
     }
   }
 }
+

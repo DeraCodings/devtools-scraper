@@ -34,15 +34,18 @@ jobs:
           EVE_ROUTE_TOKEN: ${{ secrets.EVE_ROUTE_TOKEN }}
         run: |
           npx tsx src/index.ts --preset ATS_HIRING --limit 30
+          npx tsx src/index.ts --preset DEVREL_HIRING --limit 30
+          npx tsx src/index.ts --preset WRITERS_PROGRAMS --limit 30
+          npx tsx src/index.ts --preset STARTUP_BOARDS --limit 30
+          npx tsx src/index.ts --preset FREELANCE_REMOTE_BOARDS --limit 30
           npx tsx src/index.ts --preset AI_DEVTOOLS --limit 30
+          npx tsx src/index.ts --preset BAAS_COMPETITORS --limit 30
           npx tsx src/index.ts --preset AUTH_COMPETITORS --limit 30
           npx tsx src/index.ts --preset CMS_COMPETITORS --limit 30
-          npx tsx src/index.ts --preset BAAS_COMPETITORS --limit 30
-          npx tsx src/index.ts --preset YC_STARTUPS --limit 30
-          npx tsx src/index.ts --preset G2_CAPTERRA --limit 30
+          npx tsx src/index.ts --preset SOCIAL_HIRING --limit 30
 
-      - name: Commit & Push CSV Changes
+      - name: Commit & Push Lead Registry and CSV Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore(data): update lead exports and deduplication history [skip ci]"
-          file_pattern: "*.csv data/*.csv"
+          commit_message: "chore(data): update lead registry and deduplication history [skip ci]"
+          file_pattern: "data/* output/*"

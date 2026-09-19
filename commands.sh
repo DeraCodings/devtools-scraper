@@ -1,10 +1,15 @@
 # Run searches for each preset
+npx tsx src/index.ts --preset ATS_HIRING --limit 5
+npx tsx src/index.ts --preset DEVREL_HIRING --limit 5
+npx tsx src/index.ts --preset WRITERS_PROGRAMS --limit 5
+npx tsx src/index.ts --preset STARTUP_BOARDS --limit 5
+npx tsx src/index.ts --preset FREELANCE_REMOTE_BOARDS --limit 5
+npx tsx src/index.ts --preset SOCIAL_HIRING --limit 5
+npx tsx src/index.ts --preset AI_DEVTOOLS --limit 5
 npx tsx src/index.ts --preset BAAS_COMPETITORS --limit 5
 npx tsx src/index.ts --preset AUTH_COMPETITORS --limit 5
-npx tsx src/index.ts --preset AI_DEVTOOLS --limit 5
 npx tsx src/index.ts --preset CMS_COMPETITORS --limit 5
-npx tsx src/index.ts --preset YC_STARTUPS --limit 5
-npx tsx src/index.ts --preset G2_CAPTERRA --limit 5
+
 
 # Target vector databases hiring writers
 npx tsx src/index.ts -q "site:boards.greenhouse.io \"vector database\" \"technical writer\"" -l 10

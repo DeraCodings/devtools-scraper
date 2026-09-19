@@ -1,6 +1,6 @@
 {
   "name": "devtool-lead-scraper",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "CLI tool to scrape and filter high-intent prospective DevTool leads",
   "type": "module",
   "main": "dist/index.js",

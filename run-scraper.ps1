@@ -10,11 +10,15 @@ $logFile = Join-Path -Path $projectDir -ChildPath "cron-log.txt"
 
 # Execute scraper presets using full PATH resolution
 try {
-    & npx tsx src/index.ts --preset ATS_HIRING --limit 20 *>> $logFile
-    & npx tsx src/index.ts --preset AI_DEVTOOLS --limit 20 *>> $logFile
+    & npx tsx src/index.ts --preset ATS_HIRING --limit 15 *>> $logFile
+    & npx tsx src/index.ts --preset DEVREL_HIRING --limit 15 *>> $logFile
+    & npx tsx src/index.ts --preset WRITERS_PROGRAMS --limit 15 *>> $logFile
+    & npx tsx src/index.ts --preset STARTUP_BOARDS --limit 15 *>> $logFile
+    & npx tsx src/index.ts --preset AI_DEVTOOLS --limit 15 *>> $logFile
 } catch {
     "❌ Error during execution: $_" | Out-File -FilePath $logFile -Encoding utf8 -Append
 }
+
 
 # Write completion timestamp
 "✅ Run finished at $(Get-Date)" | Out-File -FilePath $logFile -Encoding utf8 -Append

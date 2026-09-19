@@ -17,6 +17,7 @@ const MAX_MARKDOWN_CHARS = 15000;
 export async function scrapePage(
   url: string,
   domain: string,
+  companySlug?: string,
 ): Promise<ScrapedPage | null> {
   console.log(`🕷️ Firecrawl scraping: ${url}`);
 
@@ -55,6 +56,7 @@ export async function scrapePage(
     return {
       url,
       domain,
+      companySlug: companySlug || domain.split(".")[0],
       markdown,
       title: response.metadata?.title || domain,
       scrapedAt: new Date().toISOString(),
@@ -79,7 +81,8 @@ export async function scrapeBatch(
     targets,
     batchSize,
     delayMs,
-    async (target) => await scrapePage(target.link, target.domain),
+    async (target) =>
+      await scrapePage(target.link, target.domain, target.companySlug),
   );
 
   // Filter out any failed or empty page scrapes
@@ -92,3 +95,4 @@ export async function scrapeBatch(
   );
   return validPages;
 }
+

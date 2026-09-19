@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-09-19T00:00:00.000Z",
+  "companies": {
+    "firecrawl": {
+      "companyName": "Firecrawl",
+      "companySlug": "firecrawl",
+      "domain": "jobs.ashbyhq.com",
+      "canonicalWebsite": "https://firecrawl.dev",
+      "discoveredAt": "2026-08-23T15:20:17.519Z",
+      "lastSeenAt": "2026-08-23T15:20:17.519Z",
+      "jobUrls": [
+        "https://jobs.ashbyhq.com/firecrawl/27a38804-9e98-49bb-8a43-b8dddea1ae15"
+      ],
+      "intentScore": 70,
+      "leadType": "JOB_POSTING"
+    },
+    "cyclr": {
+      "companyName": "Cyclr",
+      "companySlug": "cyclr",
+      "domain": "cyclr.com",
+      "canonicalWebsite": "https://cyclr.com",
+      "discoveredAt": "2026-08-28T10:39:54.888Z",
+      "lastSeenAt": "2026-08-28T10:39:54.888Z",
+      "jobUrls": [
+        "https://cyclr.com/use-cases/saas-developers"
+      ],
+      "intentScore": 40,
+      "leadType": "GENERAL_DEVTOOL"
+    }
+  },
+  "seenJobUrls": {
+    "https://jobs.ashbyhq.com/firecrawl/27a38804-9e98-49bb-8a43-b8dddea1ae15": "firecrawl",
+    "https://cyclr.com/use-cases/saas-developers": "cyclr"
+  }
+}
